@@ -28,6 +28,7 @@ __all__ = [
     "fig_efficacy_projection", "fig_population_funnel", "fig_prevention_ladder",
     "fig_prescribing_contour", "fig_choice_shares", "fig_short_scenarios",
     "fig_evidence_coverage", "format_assumption_ledger", "EXPORTED_CHARTS",
+    "fig_exhibit_response", "fig_exhibit_adoption", "fig_exhibit_chain",
 ]
 
 STATUS_COLOR = {"verified_primary": GREEN, "verified_secondary": GREEN,
@@ -35,25 +36,69 @@ STATUS_COLOR = {"verified_primary": GREEN, "verified_secondary": GREEN,
                 "unverified": RED}
 
 
+def _wrap(text: str, max_chars: int) -> List[str]:
+    """Greedy word wrap; used so a subtitle never runs past the plot edge."""
+    words, lines, cur = text.split(), [], ""
+    for word in words:
+        cand = (cur + " " + word).strip()
+        if cur and len(cand) > max_chars:
+            lines.append(cur)
+            cur = word
+        else:
+            cur = cand
+    if cur:
+        lines.append(cur)
+    return lines or [""]
+
+
 def apply_layout(fig: go.Figure, title: str = "", subtitle: str = "",
-                 y_title: str = "", x_title: str = "", height: int = 460
-                 ) -> go.Figure:
-    """Apply the lab's brand layout to a figure."""
-    top = int(height * 0.17) if title else int(height * 0.10)
+                 y_title: str = "", x_title: str = "", height: int = 460,
+                 width: Optional[int] = None,
+                 subplots_header: bool = False) -> go.Figure:
+    """Apply the lab's brand layout to a figure.
+
+    The header is laid out from pixels measured down from the top of the
+    figure rather than from paper fractions, so a multi-line subtitle or a row
+    of subplot headings can never be pushed through the top of the plot area.
+    ``subplots_header`` reserves the extra band that ``make_subplots`` uses
+    for its own panel titles. Each subtitle line is its own annotation, so the
+    lines stay flush left instead of being centred against each other.
+    """
+    bottom = int(PLOT_LAYOUT["margin"]["b"])
+    band = 34 if subplots_header else 12
+    top = int(height * (0.17 if title else 0.10))
     layout = dict(PLOT_LAYOUT)
     layout.update(height=height, margin=dict(PLOT_LAYOUT["margin"], t=top))
+    if width:
+        layout["width"] = width
     fig.update_layout(**layout)
-    margin = PLOT_LAYOUT["margin"]
-    bottom_frac = margin["b"] / height
-    span = 1.0 - bottom_frac - top / height
+
+    wrap_at = max(int((int(fig.layout.width or 700) - 70) / 6.9), 60)
+    sub_lines = [ln for part in subtitle.split("<br>") for ln in _wrap(part, wrap_at)] \
+        if subtitle else []
+    header = 16 + (20 if title else 0) + (8 + 17 * len(sub_lines) if sub_lines else 0) + band
+    top = max(top, header)
+    fig.update_layout(margin=dict(PLOT_LAYOUT["margin"], t=top))
+    plot_h = max(height - top - bottom, 1)
+
+    def paper_y(y_px: float) -> float:
+        return 1.0 + (top - y_px) / plot_h
+
+    y = top - band
+    if sub_lines:
+        for i, line in enumerate(sub_lines):
+            fig.add_annotation(text=line, x=0, xref="paper", xanchor="left",
+                               align="left",
+                               y=paper_y(y - (len(sub_lines) - i) * 17),
+                               yref="paper",
+                               yanchor="top", showarrow=False,
+                               font=dict(size=12, color=GREY_600))
+        y -= 17 * len(sub_lines) + 8
     if title:
         fig.add_annotation(text=f"<b>{title}</b>", x=0, xref="paper", xanchor="left",
-                           y=(0.975 - bottom_frac) / span, yref="paper", yanchor="top",
+                           align="left",
+                           y=paper_y(y - 20), yref="paper", yanchor="top",
                            showarrow=False, font=dict(size=17, color=PHVS_BLUE_DARK))
-    if subtitle:
-        fig.add_annotation(text=subtitle, x=0, xref="paper", xanchor="left",
-                           y=(0.885 - bottom_frac) / span, yref="paper", yanchor="top",
-                           showarrow=False, font=dict(size=12, color=GREY_600))
     if y_title:
         fig.update_yaxes(title_text=y_title)
     if x_title:
@@ -95,11 +140,13 @@ def fig_pitch_vs_models(repro: Dict, scenario: pd.DataFrame, price: float) -> go
     fig.add_trace(go.Bar(
         x=labels, y=values, marker_color=colors, text=[f"${v:,.2f}" for v in values],
         textposition="outside", name="Model value per share"))
-    fig.add_hline(y=price, line_color=AMBER, line_width=2, line_dash="dash",
-                  annotation_text=f"Market price ${price:,.2f}",
-                  annotation_font_color=AMBER, annotation_position="bottom right",
-                  annotation_xanchor="right")
+    fig.add_hline(y=price, line_color=AMBER, line_width=2, line_dash="dash")
+    fig.add_annotation(x=0, xref="x domain", xanchor="left",
+                       y=price, yref="y", yanchor="bottom",
+                       text=f"Market price ${price:,.2f}",
+                       font=dict(size=13, color=AMBER), showarrow=False)
     fig.update_layout(bargap=0.35)
+    fig.update_yaxes(range=[0, max(values) * 1.16])
     return apply_layout(
         fig, "Two models, one price",
         "The pitch's own cash flows reproduced, then extended with verified shares, "
@@ -240,6 +287,7 @@ def fig_response_categories(dist) -> go.Figure:
         subtitle = (f"{dist.trial} / {dist.arm}, n={dist.total_patients}. Exclusive categories "
                     "reconstructed by subtraction from the nested thresholds.")
     fig.update_xaxes(tickangle=-20)
+    fig.update_yaxes(tickformat=".0%")
     return apply_layout(fig, "Exclusive response categories", subtitle,
                         y_title="Share of patients", height=460)
 
@@ -256,6 +304,7 @@ def fig_response_thresholds(intervals: pd.DataFrame) -> go.Figure:
                      arrayminus=(df["proportion"] - df["ci_low"]).tolist(),
                      color=GREY_600, thickness=1.6, width=5)))
     fig.update_xaxes(tickangle=-20)
+    fig.update_yaxes(tickformat=".0%")
     return apply_layout(
         fig, "Cumulative thresholds with exact binomial intervals",
         "Clopper-Pearson intervals describe sampling only. The observation window is a "
@@ -481,6 +530,215 @@ def fig_evidence_coverage(provenance: pd.DataFrame) -> go.Figure:
         y_title="Observations", height=420)
 
 
+# ---------------------------------------------------------------------------
+# Slide-ready research exhibits
+# ---------------------------------------------------------------------------
+
+STAGE_MEASURED = "STAGE 1 · MEASURED - clinical evidence"
+STAGE_ADOPTION = "STAGE 2 · UNMEASURED - adoption"
+STAGE_DOWNSIDE = "STAGE 3 · MODEL - downside"
+
+
+def fig_exhibit_response(inputs: Dict) -> go.Figure:
+    """Exhibit 1: exclusive response categories and the precision behind them."""
+    dist = inputs["dist"]
+    intervals = inputs["intervals"]
+    headline = inputs["headline"]
+    props = dist.proportions
+    counts = dist.counts
+    n = dist.total_patients
+
+    fig = make_subplots(
+        rows=1, cols=2, horizontal_spacing=0.16,
+        subplot_titles=("Exclusive categories, one patient each",
+                        "Disclosed cumulative thresholds, exact 95% intervals"))
+
+    labels = list(props.keys())
+    values = [props[k] for k in labels]
+    colors = [PHVS_BLUE if "non-responder" not in k else RED for k in labels]
+    fig.add_trace(go.Bar(
+        x=labels, y=values, marker_color=colors,
+        text=[f"{counts[k]} of {n} · {v:.1%}" for k, v in zip(labels, values)],
+        textposition="outside", showlegend=False), row=1, col=1)
+
+    df = intervals.sort_values("level")
+    fig.add_trace(go.Scatter(
+        x=[str(t).replace(">=", "≥") for t in df["threshold"]],
+        y=df["proportion"], mode="markers+lines",
+        marker=dict(size=13, color=PHVS_BLUE), line=dict(color=SERIES[1], width=1.6),
+        showlegend=False,
+        error_y=dict(type="data", array=(df["ci_high"] - df["proportion"]).tolist(),
+                     arrayminus=(df["proportion"] - df["ci_low"]).tolist(),
+                     color=GREY_600, thickness=1.8, width=6)),
+        row=1, col=2)
+    fig.add_hline(y=headline, line_color=AMBER, line_dash="dash", line_width=2,
+                  row=1, col=2)
+    fig.add_annotation(x=1, xref="x2 domain", xanchor="right",
+                       y=headline, yref="y2", yanchor="top",
+                       text=f"Headline mean reduction {headline:.0%} - not a patient share",
+                       font=dict(size=13, color=AMBER), showarrow=False)
+
+    fig.update_yaxes(tickformat=".0%", range=[0, 1.16], row=1, col=1)
+    fig.update_yaxes(tickformat=".0%", range=[0, 1.16], row=1, col=2)
+    fig.update_xaxes(tickangle=-24, row=1, col=1)
+    fig.update_xaxes(tickangle=-24, row=1, col=2)
+
+    return apply_layout(
+        fig,
+        "An 83% mean, a 45% patient",
+        f"CHAPTER-3 deucrictibant XR 40 mg, n={n}, 168-day window. Exclusive categories are "
+        "subtraction of the published cumulative thresholds; intervals are exact and cover "
+        "sampling only - the window length is a design choice and is reported separately.",
+        y_title="Share of patients", height=760, width=1720,
+        subplots_header=True)
+
+
+def fig_exhibit_adoption(inputs: Dict) -> go.Figure:
+    """Exhibit 2: what the price must have taken from existing therapy."""
+    bars = inputs["bars"].iloc[::-1]
+    segs = inputs["segments"].sort_values("max_value_attainable")
+    price = inputs["price"]
+
+    fig = make_subplots(
+        rows=1, cols=2, horizontal_spacing=0.34,
+        subplot_titles=("Patients: what the price needs vs what the market supplies",
+                        "No single segment can carry the price"))
+
+    colors = []
+    for kind in bars["kind"]:
+        colors.append({"source fact": PHVS_BLUE_DARK, "lower bound": GREY_600,
+                       "model solve": PHVS_BLUE, "assumption": AMBER}[kind])
+    fig.add_trace(go.Bar(
+        x=bars["patients"], y=bars["label"], orientation="h", marker_color=colors,
+        text=[f"{v:,.0f}" for v in bars["patients"]], textposition="outside",
+        showlegend=False), row=1, col=1)
+
+    labels = [f"{s} (95% switching)" for s in segs["segment"]]
+    fig.add_trace(go.Bar(
+        x=segs["max_value_attainable"], y=labels, orientation="h",
+        marker_color=SERIES[1],
+        text=[(f"-${abs(v):,.2f}" if v < 0 else f"${v:,.2f}")
+              for v in segs["max_value_attainable"]],
+        textposition=["inside" if v <= -8 else "outside"
+                      for v in segs["max_value_attainable"]],
+        insidetextfont=dict(color="white"), showlegend=False), row=1, col=2)
+    fig.add_vline(x=price, line_color=AMBER, line_dash="dash", line_width=2.4,
+                  row=1, col=2)
+    fig.add_annotation(x=price, xref="x2", xanchor="right",
+                       y=0.74, yref="paper", yanchor="middle",
+                       text=f"Market price ${price:,.2f}",
+                       font=dict(size=13, color=AMBER), showarrow=False)
+
+    switch_share = bars.attrs["switch_share"]
+    fig.update_xaxes(title_text="Patients", range=[0, 8600], row=1, col=1)
+    fig.update_xaxes(title_text="Model value per share if this segment alone switches",
+                     range=[-17, 37], row=1, col=2)
+
+    return apply_layout(
+        fig,
+        "The price is a switching bet",
+        f"At least {switch_share:.0%} of the patients the price requires must come from "
+        "patients who are already on therapy: capturing every new long-term-prophylaxis "
+        "patient worldwide over the whole ramp still falls short.<br>"
+        "Segment ceilings are outputs of the ledger's stated choice coefficients, "
+        "not observed prescribing.",
+        height=720, width=1720, subplots_header=True)
+
+
+def fig_exhibit_chain(inputs: Dict) -> go.Figure:
+    """Exhibit 3 (centre-piece): clinical evidence -> adoption -> downside valuation."""
+    clinical = inputs["clinical"]
+    curve = inputs["curve"]
+    scenarios = inputs["scenarios"].set_index("scenario")
+    price = inputs["price"]
+    breakeven = inputs["breakeven"]
+
+    short_labels = ["Mean reduction vs placebo", "At least 90% reduction",
+                    "Attack-free at 168 days", "Less than 50% reduction"]
+
+    fig = make_subplots(
+        rows=1, cols=3, horizontal_spacing=0.13,
+        subplot_titles=("<b>STAGE 1</b> &nbsp;MEASURED · clinical evidence",
+                        "<b>STAGE 2</b> &nbsp;UNMEASURED · adoption",
+                        "<b>STAGE 3</b> &nbsp;MODEL · downside"))
+
+    # -- stage 1: measured clinical anchors -------------------------------
+    palette = {"verified_primary": PHVS_BLUE_DARK, "corroborated_secondary": PHVS_BLUE,
+               "provisional_unverified": AMBER}
+    fig.add_trace(go.Bar(
+        x=short_labels, y=clinical["value"],
+        marker_color=[palette[s] for s in clinical["status"]],
+        text=[f"{v:.1%}" for v in clinical["value"]], textposition="outside",
+        showlegend=False), row=1, col=1)
+    fig.update_yaxes(tickformat=".0%", title_text="Share of patients",
+                     range=[0, 1.12], row=1, col=1)
+    fig.update_xaxes(tickangle=-22, row=1, col=1)
+
+    # -- stage 2: adoption surface ----------------------------------------
+    fig.add_trace(go.Scatter(
+        x=curve["penetration"], y=curve["value_per_share"], mode="lines",
+        line=dict(color=PHVS_BLUE, width=3.2), showlegend=False), row=1, col=2)
+    fig.add_shape(type="rect", xref="x2", yref="paper",
+                  x0=0.02, x1=float(curve["penetration"][-1]), y0=0,
+                  y1=breakeven / 100.0,
+                  fillcolor=RED, opacity=0.05, line_width=0)
+    fig.add_hline(y=price, line_color=AMBER, line_dash="dash", line_width=2.2,
+                  row=1, col=2)
+    fig.add_hline(y=breakeven, line_color=RED, line_dash="dot", line_width=2.2,
+                  row=1, col=2)
+    pill = dict(bgcolor="rgba(255,255,255,0.92)", borderpad=3)
+    fig.add_annotation(x=0.28, xref="x2", xanchor="right",
+                       y=price, yref="y2", yanchor="top",
+                       text=f"Observed price ${price:,.2f}",
+                       font=dict(size=13, color=AMBER), showarrow=False, **pill)
+    fig.add_annotation(x=0.02, xref="x2", xanchor="left",
+                       y=breakeven, yref="y2", yanchor="bottom",
+                       text=f"Short break-even ${breakeven:,.2f}",
+                       font=dict(size=13, color=RED), showarrow=False, **pill)
+    for x, lab, col, ay in (
+            (curve["required"], f"price requires {curve['required']:.1%}",
+             PHVS_BLUE_DARK, 0.98),
+            (curve["stated"], f"our stated case {curve['stated']:.1%}", GREY_600, 0.90)):
+        fig.add_vline(x=x, line_color=col, line_dash="dot", line_width=1.8,
+                      annotation_text=lab, annotation_font_color=col,
+                      annotation_position="top", annotation_y=ay,
+                      annotation_yanchor="top", row=1, col=2)
+    fig.update_xaxes(title_text="Peak prophylaxis penetration", tickformat=".0%",
+                     range=[0, 0.28], row=1, col=2)
+    fig.update_yaxes(title_text="USD per share", range=[0, 100], row=1, col=2)
+
+    # -- stage 3: scenario outcome ----------------------------------------
+    order = ["bear", "reference", "bull"]
+    vals = [float(scenarios.loc[s, "value_per_share"]) for s in order]
+    fig.add_trace(go.Bar(
+        x=order, y=vals,
+        marker_color=[RED if v < price else PHVS_BLUE for v in vals],
+        text=[f"${v:,.2f}" for v in vals], textposition="outside",
+        showlegend=False), row=1, col=3)
+    fig.add_hline(y=price, line_color=AMBER, line_dash="dash", line_width=2.2,
+                  row=1, col=3)
+    fig.add_hline(y=breakeven, line_color=RED, line_dash="dot", line_width=2,
+                  row=1, col=3)
+    fig.add_annotation(x=0, xref="x3", xanchor="left",
+                       y=price, yref="y3", yanchor="bottom",
+                       text=f"Observed ${price:,.2f}",
+                       font=dict(size=13, color=AMBER), showarrow=False, **pill)
+    fig.add_annotation(x=0, xref="x3", xanchor="left",
+                       y=breakeven, yref="y3", yanchor="top",
+                       text=f"break-even ${breakeven:,.2f}",
+                       font=dict(size=13, color=RED), showarrow=False, **pill)
+    fig.update_yaxes(title_text="USD per share", range=[0, 100], row=1, col=3)
+
+    return apply_layout(
+        fig,
+        "Evidence to adoption to downside",
+        "Stage 1 is measured. Stage 2 is not: value per share is swept over peak penetration "
+        "with every other ledger input held at its stated value.<br>Stage 3 is the same model "
+        "under the ledger's bear / reference / bull factors. Nothing between the panels is "
+        "observed; each link is itemised in the chain table.",
+        height=820, width=1720, subplots_header=True)
+
+
 def format_assumption_ledger(df: pd.DataFrame) -> pd.DataFrame:
     """Presentation view of the assumption ledger, with provenance kept visible."""
     out = df.copy()
@@ -499,7 +757,7 @@ def format_assumption_ledger(df: pd.DataFrame) -> pd.DataFrame:
 
 
 EXPORTED_CHARTS = {
-    "phvs_required_inputs": "The inputs the market price requires",
-    "phvs_response_categories": "Reconstructed response categories",
-    "phvs_value_scenarios": "Model value against the observed price",
+    "phvs_exhibit_1_response_distribution": "Exhibit 1 - who actually responded",
+    "phvs_exhibit_2_adoption_constraint": "Exhibit 2 - what the price must take",
+    "phvs_exhibit_3_evidence_to_downside": "Exhibit 3 - evidence to adoption to downside",
 }

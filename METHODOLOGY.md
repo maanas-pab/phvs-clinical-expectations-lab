@@ -1,8 +1,33 @@
 # Methodology
 
-PHVS Clinical Expectations Lab reverse-engineers the assumptions required to
-justify the observed Pharvaris share price (NASDAQ: PHVS, close **$31.19** on
-2 October 2026). It is a measurement instrument, not a forecast.
+PHVS Clinical Expectations Lab is the research component of a short thesis on
+Pharvaris N.V. (NASDAQ: PHVS, close **$31.19** on 2 October 2026). It
+reverse-engineers the assumptions required to justify that price, and it is a
+measurement instrument, not a forecast.
+
+## 0. How the research is organised
+
+The lab leads with the recommendation, then resolves three research questions.
+Every question is stated the same way, so no step between "a trial read out" and
+"a share is worth X" can be hidden:
+
+| step | what it must contain |
+| --- | --- |
+| methodology | exactly what was computed and from which disclosed counts |
+| finding | the number, with its verification status |
+| investment implication | what it means for the thesis, in words |
+| valuation impact | how far it moves value per share - or `none` |
+
+Each question, and each workstream under it, carries one of three statuses:
+
+| status | meaning |
+| --- | --- |
+| `completed` | analysis that has been run on published data |
+| `proposed` | research designed but not yet carried out |
+| `assumed` | analyst input with no source measurement |
+
+Where the data cannot answer a question, the output is a **break-even threshold
+or a sensitivity**, never an invented conclusion.
 
 ## 1. Evidence rules
 
@@ -127,11 +152,29 @@ design, the CSV contract for responses, a conditional-logit estimator with
 standard errors, and a synthetic demo mode that is labelled as synthetic in every
 output. Stated preference would still not measure revealed prescribing.
 
-## 9. What this cannot do
+## 9. The exhibits
+
+Three slide-ready exhibits are generated from the same modules and exported as
+PNGs to `docs/exhibits/`, each with its methodology caption and sources:
+
+| exhibit | chain stage |
+| --- | --- |
+| `phvs_exhibit_1_response_distribution` | clinical evidence: exclusive response categories from nested thresholds |
+| `phvs_exhibit_2_adoption_constraint` | adoption: patients the price requires vs what the market supplies |
+| `phvs_exhibit_3_evidence_to_downside` | evidence → adoption curve → bear / reference / bull, with the break-even marked |
+
+The full chain table behind exhibit 3 lists every connecting assumption with its
+type and verification status, and marks which inputs reach the discounted cash
+flow directly.
+
+## 10. What this cannot do
 
 - It does not forecast. Scenario outputs are uncalibrated model results.
 - It does not compare separate trials as if randomised against each other.
 - It does not generate patient-level data, physician interviews or consensus
   estimates.
+- It does not treat stated prescribing preference as observed prescribing
+  behaviour; the survey has not been conducted.
 - It does not know the real net price, the real switching rate, or durability
-  beyond 24 weeks - those are the inputs section 8 lists as unmeasured.
+  beyond 24 weeks - those are among the inputs the recommendation lists as
+  unmeasured.

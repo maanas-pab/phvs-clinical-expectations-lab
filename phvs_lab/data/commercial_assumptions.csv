@@ -1,0 +1,95 @@
+parameter,value,unit,category,source_id,source_url,assumption_type,verification_status,notes
+us_diagnosed_hae_patients,7614,patients,epidemiology,S14,https://www.delveinsight.com/report-store/hereditary-angioedema-hae-market,source_fact,verified_secondary,US diagnosed prevalent HAE cases in 2021 (DelveInsight). Claims-based alternative range is 6595-9559 for 2018-2020 (S13).
+us_hae_prevalence_per_100k,2.43,per 100000,epidemiology,S13,https://pubmed.ncbi.nlm.nih.gov/40414286/,source_fact,verified_primary,"US claims-based prevalence 2020 cohort; expert-adjusted estimate 1.84 per 100,000 (6595 people)."
+us_hae_prevalence_expert_adj_per_100k,1.84,per 100000,epidemiology,S13,https://pubmed.ncbi.nlm.nih.gov/40414286/,source_fact,verified_primary,Expert-physician adjusted prevalence estimate 2020 cohort.
+eu5_uk_diagnosed_hae_patients,4500,patients,epidemiology,S14,https://www.delveinsight.com/report-store/hereditary-angioedema-hae-market,calculated,unverified,"DERIVED: 7MM+China = 14375 and US = 7614 (both 2021), leaving 6761 for EU5+UK+Japan+China; EU5+UK share assumed at 4500. Editable."
+row_diagnosed_hae_patients,7500,patients,epidemiology,,,analyst_assumption,unverified,Rest-of-world diagnosed patients. Analyst assumption - no single registry source. Editable.
+global_diagnosed_hae_patients,19614,patients,epidemiology,,,calculated,unverified,SUM of US + EU5/UK + RoW. Used as the denominator for global penetration.
+takhyro_fy2025_revenue_jpy,223924000000,JPY,market_anchor,S11,https://www.sec.gov/Archives/edgar/data/1395064/000139506426000177/R43.htm,source_fact,verified_primary,TAKHZYRO revenue for fiscal year ended 31 Mar 2026 (Takeda revenue disaggregation). FY2024 = JPY 223.163bn.
+usdjpy_assumed,149,JPY per USD,market_anchor,,,analyst_assumption,unverified,Assumed FX for USD conversion. Editable.
+takhyro_fy2025_revenue_usd,1502845638,USD,market_anchor,,,calculated,unverified,CALCULATED = takhyro_fy2025_revenue_jpy / usdjpy_assumed.
+takhyro_patients_global,6900,patients,market_anchor,S10,https://assets-dam.takeda.com/image/upload/v1780626053/Global/Investor/Financial-Results/FY2025/Q4_0605/qr2025_q4_p01_en_20260605.pdf,source_fact,verified_primary,~6900 patients treated globally; >20000 patient-years of experience; #1 prescribed modern long-term prophylaxis.
+implied_revenue_per_takhyro_patient,217804,USD,market_anchor,,,calculated,unverified,"CALCULATED = takhyro_fy2025_revenue_usd / takhyro_patients_global. Global blended realization including ex-US pricing - a sanity anchor, not a US net price."
+orladeyo_fy2026_guidance_usd,645000000,USD,market_anchor,S17,https://stockanalysis.com/stocks/bcrx/,source_fact,verified_secondary,BioCryst FY2026 Orladeyo revenue guidance (up to USD 645m). Q2 2026 Orladeyo net revenue USD 158.2m.
+implied_oral_share_of_ltp_value,0.30,proportion,market_anchor,,,calculated,unverified,CALCULATED = orladeyo_fy2026_guidance_usd / (orladeyo_fy2026_guidance_usd + takhyro_fy2025_revenue_usd). Oral share of the two leading LTP brands by revenue.
+global_hae_therapy_market_2027e,4300000000,USD,market_anchor,S15,https://ir.pharvaris.com/node/7946/html,source_fact,verified_secondary,Company filing cites public research: ~USD 2.7bn (2022) growing at ~9% CAGR to ~USD 4.3bn (2027).
+prophylaxis_penetration_of_diagnosed,0.60,proportion,pathway,,,analyst_assumption,unverified,Share of diagnosed patients on long-term prophylaxis. Analyst assumption with editable range 0.40-0.80; no registry-verified figure.
+oral_share_of_prophylaxis,0.30,proportion,pathway,,,calculated,unverified,Seeded from implied_oral_share_of_ltp_value. Editable in the UI.
+new_ltp_patients_per_year_global,200,patients per year,pathway,S20,https://stockanalysis.com/stocks/phvs/transcripts/733290-wells-fargo-21st-annual-healthcare-conference/,source_fact,verified_secondary,"Management range 150-250 new long-term-prophylaxis patients per year (conference remarks, Sept 2026)."
+orladeyo_annual_dropout_rate,0.40,proportion,pathway,S20,https://stockanalysis.com/stocks/phvs/transcripts/733290-wells-fargo-21st-annual-healthcare-conference/,source_fact,verified_secondary,"COMPANY CLAIM: 'about 40% of patients on Orladeyo drop out, either for efficacy or tolerability'. Unverified by third-party data."
+seg_well_controlled,0.32,proportion,segments,,,analyst_assumption,unverified,Segment 1: well controlled on current prophylaxis (no breakthrough attacks). Shares are editable and validated to sum to <=1.
+seg_incompletely_controlled,0.18,proportion,segments,,,analyst_assumption,unverified,Segment 2: incompletely controlled on current prophylaxis (>=1 breakthrough attack per month).
+seg_injection_averse,0.16,proportion,segments,,,analyst_assumption,unverified,Segment 3: injection-averse and not on injectable prophylaxis.
+seg_poor_daily_pill_adherence,0.12,proportion,segments,,,analyst_assumption,unverified,Segment 4: poor daily-pill adherence on current oral prophylaxis.
+seg_gene_editing_unwilling,0.10,proportion,segments,,,analyst_assumption,unverified,Segment 5: unwilling or ineligible to consider gene editing (keeps them in the drug market rather than a one-shot cure).
+seg_residual_no_demand,0.12,proportion,segments,,,analyst_assumption,unverified,Residual segment so the five headline segments plus residual sum to exactly 1.0.
+prophylaxis_eligibility_rate,0.90,proportion,access,,,analyst_assumption,unverified,Clinical eligibility for prophylaxis among diagnosed patients.
+payer_coverage_rate,0.85,proportion,access,,,analyst_assumption,unverified,Share of eligible patients whose payer approves a premium oral prophylactic.
+out_of_pocket_monthly_usd,50,USD per month,access,,,analyst_assumption,unverified,Typical specialty-pharmacy copay tier for insured patients.
+base_switching_rate,0.18,proportion,switching,,,analyst_assumption,unverified,Baseline annual probability that an eligible patient on existing prophylaxis switches to PHVS. SCENARIO INPUT - not a measured prescribing rate.
+chapter3_rate_reduction_vs_placebo,0.83,proportion,efficacy,S01,https://app.edgar.tools/filing/1830487/0001193125-26-384339/phvs-ex99_1.htm,source_fact,verified_primary,CHAPTER-3 primary endpoint: 83% mean monthly attack-rate reduction vs placebo (p<0.0001; 95% CI 72-90 per S22).
+chapter3_rate_reduction_type12,0.87,proportion,efficacy,S01,https://app.edgar.tools/filing/1830487/0001193125-26-384339/phvs-ex99_1.htm,source_fact,verified_primary,87% reduction in the HAE type 1/2 subgroup (n=80).
+real_world_efficacy_haircut,0.75,multiplier,efficiency,,,analyst_assumption,unverified,Multiplier applied to trial efficacy to reflect real-world adherence and diagnosis quality. Scenario input.
+baseline_monthly_attack_rate,1.93,attacks per 4 weeks,efficiency,S03,https://clinicaltrials.gov/study/NCT05047185,source_fact,verified_primary,CHAPTER-1 placebo-arm least-squares mean (SE 0.391). HELP-03 placebo arm was 1.967 and APeX-2 placebo 2.35 per 4 weeks.
+phvs_prophylaxis_annual_net_price_us,425000,USD per patient-year,pricing,,,analyst_assumption,unverified,Pharvaris has stated it has not yet set price. Assumed at parity with leading LTP peers; editable.
+phvs_acute_annual_net_price_us,85000,USD per acute-treated patient-year,pricing,,,analyst_assumption,unverified,Annual on-demand spend per acute-treated patient (course prices x courses per year). Analyst assumption.
+phvs_acute_launch_year,2027,year,launch,S22,https://trial.medpath.com/news/pharvaris-s-oral-deucrictibant-xr-cuts-hae-attack-rate-83-in-phase-iii-chapter-3,source_fact,verified_secondary,FDA accepted the deucrictibant IR NDA in July 2026; PDUFA date 23 Apr 2027. Company has guided to a first-half 2027 launch.
+phvs_prophylaxis_launch_year,2028,year,launch,S20,https://stockanalysis.com/stocks/phvs/transcripts/733290-wells-fargo-21st-annual-healthcare-conference/,source_fact,verified_secondary,Prophylaxis NDA planned for 1H 2027; management has guided to a first-half 2028 prophylaxis launch.
+peak_penetration_prophylaxis,0.15,proportion,uptake,,,analyst_assumption,unverified,Peak share of prophylaxis-eligible patients at steady state. SCENARIO INPUT.
+peak_penetration_acute,0.08,proportion,uptake,,,analyst_assumption,unverified,Peak share of acute-eligible patients at steady state. SCENARIO INPUT.
+prophylaxis_time_to_peak_years,6,years,uptake,,,analyst_assumption,unverified,Years from launch to peak penetration.
+acute_time_to_peak_years,4,years,uptake,,,analyst_assumption,unverified,Years from launch to peak penetration.
+prophylaxis_annual_discontinuation,0.15,proportion,persistence,,,analyst_assumption,unverified,Annual discontinuation on PHVS prophylaxis. Management argues this will be low; the Orladeyo 40% claim implies otherwise for orals.
+acute_annual_discontinuation,0.25,proportion,persistence,,,analyst_assumption,unverified,Annual discontinuation on PHVS on-demand therapy.
+cogs_prophylaxis_pct_revenue,0.12,proportion,margin,,,analyst_assumption,unverified,COGS as a percentage of net revenue (specialty oral small molecule).
+cogs_acute_pct_revenue,0.15,proportion,margin,,,analyst_assumption,unverified,COGS as a percentage of net revenue for the acute capsule.
+gross_to_net_prophylaxis,0.72,proportion,pricing,,,analyst_assumption,unverified,Gross-to-net for specialty hematology prophylaxis.
+rd_expense_2026_usd,140000000,USD,opex,S08,https://www.sec.gov/Archives/edgar/data/1830487/000119312526345702/phvs-ex99_1.htm,calculated,verified_primary,CALCULATED: Q2 2026 R&D EUR 35.0m x 4. H1 2026 R&D was EUR 65.2m.
+sganda_expense_2026_usd,63200000,USD,opex,S08,https://www.sec.gov/Archives/edgar/data/1830487/000119312526345702/phvs-ex99_1.htm,calculated,verified_primary,CALCULATED: Q2 2026 G&A EUR 15.8m x 4 (commercial build-out underway).
+sganda_peak_usd,150000000,USD,opex,,,analyst_assumption,unverified,SG&A at commercial scale (US + EU launch infrastructure). Editable.
+rd_post_approval_usd,70000000,USD,opex,,,analyst_assumption,unverified,"R&D after pivotal programmes complete (lifecycle, CREAATE, post-marketing). Editable."
+q2_2026_net_loss_eur,47842729,EUR,opex,S08,https://www.sec.gov/Archives/edgar/data/1830487/000119312526345702/phvs-ex99_1.htm,source_fact,verified_primary,Net loss for the quarter ended 30 Jun 2026 (EUR 0.70 per share).
+cash_and_investments_usd,363630000,USD,capital,S16,https://stockanalysis.com/stocks/phvs/,source_fact,verified_secondary,USD 363.63m cash and equivalents. Company reports EUR 318.28m at 30 Jun 2026 (S08).
+total_debt_usd,769711,USD,capital,S16,https://stockanalysis.com/stocks/phvs/,source_fact,verified_secondary,Total debt USD 0.77m; net cash USD 362.86m (USD 5.17 per share).
+shares_outstanding,70200000,shares,capital,S16,https://stockanalysis.com/stocks/phvs/,source_fact,verified_secondary,Ordinary shares outstanding as of Oct 2026 (up 19.9% year over year; 65.21m at 31 Dec 2025 per S15).
+annual_dilution_rate,0.05,proportion,capital,,,analyst_assumption,unverified,Forward annual share dilution from ongoing burn. Historical one-year share growth was 19.9% including a May 2026 raise.
+shares_diluted_5yr,90000000,shares,capital,,,calculated,unverified,CALCULATED = shares_outstanding x (1 + annual_dilution_rate)^5.
+stock_price_current,31.19,USD,valuation,S16,https://stockanalysis.com/stocks/phvs/,source_fact,verified_secondary,Close on 2 Oct 2026. 52-week range USD 20.65-43.25.
+stock_price_pitch_deck,28.50,USD,valuation,,,source_fact,unverified,STALE INPUT: price embedded in the original pitch model (dated 15 Jan 2024). Superseded by stock_price_current.
+analyst_mean_price_target,57.58,USD,valuation,S16,https://stockanalysis.com/stocks/phvs/,source_fact,verified_secondary,14-analyst mean 12-month target; consensus 'Strong Buy'. Post-readout targets ranged USD 44-79.
+discount_rate,0.10,proportion,valuation,,,analyst_assumption,unverified,Discount rate for risk-adjusted DCF. Editable; sensitivity is reported.
+terminal_growth_rate,0.02,proportion,valuation,,,analyst_assumption,unverified,Perpetual growth after explicit forecast horizon.
+borrow_cost_annual,0.06,proportion,valuation,,,analyst_assumption,unverified,Assumed annual borrow cost for a hard-to-borrow small-cap biotech. Editable.
+short_interest_shares,1780000,shares,valuation,S23,https://finviz.com/stock?t=PHVS,source_fact,verified_secondary,"Short interest ~1.78m shares, 5.31% of float (early Oct 2026)."
+approval_probability_prophylaxis,0.88,proportion,regulatory,,,analyst_assumption,unverified,Probability of approval for the prophylaxis indication after a positive pivotal Phase 3. Applied ONCE to future cash flows.
+approval_probability_acute,0.92,proportion,regulatory,,,analyst_assumption,unverified,Probability of approval for the on-demand indication while the NDA is under FDA review (PDUFA 23 Apr 2027). Applied ONCE to future cash flows.
+prophylaxis_eligible_patients_global,17653,patients,uptake,,,calculated,unverified,CALCULATED = global_diagnosed_hae_patients x prophylaxis_eligibility_rate. Denominator for peak prophylaxis penetration.
+acute_eligibility_rate,1.00,proportion,uptake,,,analyst_assumption,unverified,"Share of diagnosed patients who may buy on-demand therapy, including breakthrough attacks while on prophylaxis. Set to 1.0 because every diagnosed patient has attacks. Editable."
+acute_eligible_patients_global,19614,patients,uptake,,,calculated,unverified,CALCULATED = global_diagnosed_hae_patients x acute_eligibility_rate. Denominator for peak acute penetration.
+loe_year,2042,year,valuation,,,analyst_assumption,unverified,Assumed loss-of-exclusivity year for both indications; after this year revenue declines at post_loe_annual_decline. Editable.
+post_loe_annual_decline,0.15,proportion,valuation,,,analyst_assumption,unverified,Annual revenue decline after loss of exclusivity. Editable.
+effective_tax_rate,0.18,proportion,valuation,,,analyst_assumption,unverified,Cash tax rate applied once net operating losses are exhausted. Editable.
+capex_pct_revenue,0.02,proportion,valuation,,,analyst_assumption,unverified,Capital expenditure as a percentage of revenue. Editable.
+nwc_pct_incremental_revenue,0.05,proportion,valuation,,,analyst_assumption,unverified,Working-capital investment as a percentage of the year-on-year revenue increase. Editable.
+forecast_end_year,2049,year,valuation,,,analyst_assumption,unverified,Last explicit forecast year of the extended model. Editable.
+rd_growth_post_launch,0.03,proportion,valuation,,,analyst_assumption,unverified,Annual growth applied to post-launch R&D from the first launch year. Editable.
+existing_oral_price_index,1.00,multiple of reference price,choice_model,,,analyst_assumption,unverified,Annual cost of the existing oral prophylactic relative to reference_ltp_price_usd. Editable.
+mnl_asc_current,0.00,utility,choice_model,,,analyst_assumption,unverified,Intercept for staying on current prophylaxis. Normalised to zero.
+mnl_asc_existing_oral,0.30,utility,choice_model,,,analyst_assumption,unverified,Intercept for switching to the existing oral prophylactic. Editable.
+mnl_asc_phvs_oral,0.40,utility,choice_model,,,analyst_assumption,unverified,Intercept for switching to PHVS oral prophylaxis before preferences and price. Editable.
+mnl_price_coef_per_ref,-1.20,utility per reference price,choice_model,,,analyst_assumption,unverified,Utility change for a full reference-price increase in annual net cost. Editable.
+mnl_switch_cost,-0.40,utility,choice_model,,,analyst_assumption,unverified,"Disutility of changing therapy, applied to both switch options. Editable."
+mnl_efficacy_bonus,0.25,utility,choice_model,,,analyst_assumption,unverified,Utility bonus for PHVS oral reflecting the CHAPTER-3 efficacy readout. Scenario input - not a measured preference.
+oral_pref_well_controlled,0.10,utility,segments,,,analyst_assumption,unverified,Oral-preference increment for patients well controlled on current prophylaxis.
+oral_pref_incompletely_controlled,0.55,utility,segments,,,analyst_assumption,unverified,Oral-preference increment for incompletely controlled patients.
+oral_pref_injection_averse,1.40,utility,segments,,,analyst_assumption,unverified,Oral-preference increment for injection-averse patients.
+oral_pref_poor_daily_pill_adherence,0.25,utility,segments,,,analyst_assumption,unverified,Oral-preference increment for patients with poor daily-pill adherence (already oral; convenience alone is weak).
+oral_pref_gene_editing_unwilling,0.60,utility,segments,,,analyst_assumption,unverified,Oral-preference increment for patients unwilling or ineligible for gene editing.
+oral_pref_residual_no_demand,0.15,utility,segments,,,analyst_assumption,unverified,Oral-preference increment for the residual segment.
+addressable_well_controlled,0.20,proportion,segments,,,analyst_assumption,unverified,Share of the segment considered likely to change therapy over the forecast horizon.
+addressable_incompletely_controlled,0.90,proportion,segments,,,analyst_assumption,unverified,Share of the segment considered likely to change therapy over the forecast horizon.
+addressable_injection_averse,0.85,proportion,segments,,,analyst_assumption,unverified,Share of the segment considered likely to change therapy over the forecast horizon.
+addressable_poor_daily_pill_adherence,0.70,proportion,segments,,,analyst_assumption,unverified,Share of the segment considered likely to change therapy over the forecast horizon.
+addressable_gene_editing_unwilling,0.60,proportion,segments,,,analyst_assumption,unverified,Share of the segment considered likely to change therapy over the forecast horizon.
+addressable_residual_no_demand,0.10,proportion,segments,,,analyst_assumption,unverified,Share of the segment considered likely to change therapy over the forecast horizon.
+reference_ltp_price_usd,425000,USD per patient-year,choice_model,,,analyst_assumption,unverified,"Reference annual net price for long-term prophylaxis used as the price index in the choice model. Set at parity with phvs_prophylaxis_annual_net_price_us, consistent with the pricing assumption. Editable."

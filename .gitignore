@@ -9,3 +9,4 @@ htmlcov/
 .streamlit/secrets.toml
 *.html
 .ipynb_checkpoints/
+!docs/index.html
